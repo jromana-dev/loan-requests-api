@@ -46,7 +46,8 @@ public class LoanRequestRepository {
     /**
      * Actualiza una solicitud existente.
      */
-    public void update(LoanRequest loanRequest) {
+    public LoanRequest update(LoanRequest loanRequest) {
         storage.put(loanRequest.getId(), loanRequest);
+        return loanRequest;
     }
 }
