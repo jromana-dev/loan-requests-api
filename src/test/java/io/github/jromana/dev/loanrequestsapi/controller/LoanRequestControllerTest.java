@@ -4,6 +4,9 @@ import java.time.LocalDate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -14,6 +17,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import io.github.jromana.dev.loanrequestsapi.domain.LoanStatus;
 import io.github.jromana.dev.loanrequestsapi.dto.CreateLoanRequestDTO;
 import io.github.jromana.dev.loanrequestsapi.dto.UpdateLoanStatusDTO;
+import io.github.jromana.dev.loanrequestsapi.exception.GlobalExceptionHandler;
+import io.github.jromana.dev.loanrequestsapi.exception.InvalidLoanStatusTransitionException;
 import io.github.jromana.dev.loanrequestsapi.service.LoanRequestService;
 import tools.jackson.databind.ObjectMapper;
 
@@ -28,14 +33,14 @@ class LoanRequestControllerTest {
      * Configura el entorno de pruebas antes de cada test:
      * - Crea un mock manual del servicio LoanRequestService.
      * - Inicializa el controller con el mock.
-     * - Construye MockMvc para testear endpoints sin levantar el contexto completo de Spring.
+     * - Construye MockMvc para usar también el GlobalExceptionHandler.
      * - Inicializa ObjectMapper para serializar DTOs a JSON.
      */
     @BeforeEach
     void setup() {
         service = mock(LoanRequestService.class); // Mock manual con Mockito
         controller = new LoanRequestController(service);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).setControllerAdvice(new GlobalExceptionHandler()).build();
         objectMapper = new ObjectMapper();
     }
 
@@ -85,9 +90,15 @@ class LoanRequestControllerTest {
         UpdateLoanStatusDTO dto = new UpdateLoanStatusDTO();
         dto.setNewStatus(LoanStatus.CANCELADA);
 
+        // Configuramos el mock para que lance InvalidLoanStatusTransitionException
+        doThrow(new InvalidLoanStatusTransitionException(
+                "No se puede cambiar de PENDIENTE a CANCELADA directamente"))
+                .when(service).updateLoanRequestStatus(anyLong(), eq(LoanStatus.CANCELADA));
+
         mockMvc.perform(patch("/loans/1/status")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest()); // Ahora devolverá 400
     }
+
 }

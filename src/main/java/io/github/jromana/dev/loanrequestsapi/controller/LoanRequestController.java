@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 import io.github.jromana.dev.loanrequestsapi.domain.LoanRequest;
 import io.github.jromana.dev.loanrequestsapi.dto.CreateLoanRequestDTO;
 import io.github.jromana.dev.loanrequestsapi.dto.UpdateLoanStatusDTO;
-import io.github.jromana.dev.loanrequestsapi.exception.InvalidLoanStatusTransitionException;
 import io.github.jromana.dev.loanrequestsapi.service.LoanRequestService;
 import jakarta.validation.Valid;
 
@@ -75,11 +74,7 @@ public class LoanRequestController {
     public LoanRequest updateLoanStatus(
             @PathVariable Long id,
             @Valid @RequestBody UpdateLoanStatusDTO dto) {
-        try {
-            return loanRequestService.updateLoanRequestStatus(id, dto.getNewStatus());
-        } catch (InvalidLoanStatusTransitionException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        return loanRequestService.updateLoanRequestStatus(id, dto.getNewStatus());
     }
     
 }
